@@ -1,12 +1,14 @@
+using Meetme.MatchingService.API;
+using Meetme.MatchingService.API.Middleware;
+using Meetme.MatchingService.Application;
 using Meetme.MatchingService.Infrastructure;
 
 var builder = WebApplication.CreateBuilder(args);
 
-builder.Services.AddControllers();
-builder.Services.AddEndpointsApiExplorer();
-builder.Services.AddSwaggerGen();
-
-builder.Services.AddInfrastructure(builder.Configuration);
+builder.Services
+	.AddApplication()
+	.AddInfrastructure(builder.Configuration)
+	.AddPresentation();
 
 var app = builder.Build();
 
@@ -18,7 +20,10 @@ if (app.Environment.IsDevelopment())
 
 app.UseHttpsRedirection();
 
+app.UseAuthentication();
 app.UseAuthorization();
+
+app.UseMiddleware<GlobalExceptionHandlingMiddleware>();
 
 app.MapControllers();
 

@@ -2,7 +2,7 @@
 
 public class LikeEntity
 {
-	public Guid LikeId { get; set; }
+	public Guid Id { get; set; }
 	public Guid ProfileId { get; set; }
 	public Guid LikedProfileId { get; set; }
 }
