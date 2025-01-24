@@ -8,10 +8,12 @@ namespace Meetme.MatchingService.Application.Likes.Commands.DeleteLike;
 public class DeleteLikeCommandHandler : IRequestHandler<DeleteLikeCommand>
 {
 	private readonly IRepository<LikeEntity> _likeRepository;
+	private readonly IMatchService _matchService;
 
-	public DeleteLikeCommandHandler(IRepository<LikeEntity> likeRepository)
+	public DeleteLikeCommandHandler(IRepository<LikeEntity> likeRepository, IMatchService matchService)
 	{
 		_likeRepository = likeRepository;
+		_matchService = matchService;
 	}
 
 	public async Task Handle(DeleteLikeCommand command, CancellationToken cancellationToken)
@@ -24,5 +26,7 @@ public class DeleteLikeCommandHandler : IRequestHandler<DeleteLikeCommand>
 		}
 
 		await _likeRepository.RemoveAsync(likeEntity, cancellationToken);
+
+		await _matchService.RemoveMatchAsync(likeEntity, cancellationToken);
 	}
 }

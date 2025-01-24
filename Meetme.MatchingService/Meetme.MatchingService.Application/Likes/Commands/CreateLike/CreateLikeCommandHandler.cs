@@ -11,10 +11,14 @@ public class CreateLikeCommandHandler : IRequestHandler<CreateLikeCommand, Creat
 	private readonly IRepository<LikeEntity> _likeRepository;
 	private readonly IMapper _mapper;
 
-	public CreateLikeCommandHandler(IRepository<LikeEntity> likeRepository, IMapper mapper)
+	private readonly IMatchService _matchService;
+
+	public CreateLikeCommandHandler(IRepository<LikeEntity> likeRepository, IMapper mapper, IMatchService matchService)
 	{
 		_likeRepository = likeRepository;
 		_mapper = mapper;
+
+		_matchService = matchService;
 	}
 
 	public async Task<CreateLikeResult> Handle(CreateLikeCommand command, CancellationToken cancellationToken)
@@ -22,6 +26,8 @@ public class CreateLikeCommandHandler : IRequestHandler<CreateLikeCommand, Creat
 		var likeEntity = _mapper.Map<LikeEntity>(command);
 
 		await _likeRepository.AddAsync(likeEntity, cancellationToken);
+
+		await _matchService.MatchProfilesAsync(likeEntity, cancellationToken);
 
 		return new CreateLikeResult(likeEntity);
 	}
