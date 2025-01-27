@@ -76,13 +76,8 @@ public class MatchService : IMatchService
 			return false;
 		}	
 
-		if (matchingProfile.Age < profile.Preference.MinAge
-			&& matchingProfile.Age > profile.Preference.MaxAge
-			&& matchingProfile.Gender == profile.Preference.GenderPreference)
-		{
-			return false;
-		}
-
-		return true;
+		return !(matchingProfile.Age < profile.Preference.MinAge
+			|| matchingProfile.Age > profile.Preference.MaxAge
+			|| matchingProfile.Gender != profile.Preference.GenderPreference);
 	}
 }
