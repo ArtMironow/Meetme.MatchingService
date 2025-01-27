@@ -38,6 +38,11 @@ public class ProfileServiceClient : IProfileServiceClient
 	private string? GetAuthorizationToken()
 	{
 		var authorizationHeader = _httpContextAccessor.HttpContext.Request.Headers[ProfileServiceKeys.AuthorizationHeaderName].ToString();
+		return RemoveAuthenticationSchemeName(authorizationHeader);
+	}
+
+	private string? RemoveAuthenticationSchemeName(string authorizationHeader)
+	{
 		return authorizationHeader.Remove(0, ProfileServiceKeys.AuthenticationHeaderScheme.Length + 1);
 	}
 }
