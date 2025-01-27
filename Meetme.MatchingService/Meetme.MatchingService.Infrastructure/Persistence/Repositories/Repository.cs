@@ -1,5 +1,6 @@
 ﻿using Meetme.MatchingService.Application.Common.Interfaces;
 using Microsoft.EntityFrameworkCore;
+using System.Linq.Expressions;
 
 namespace Meetme.MatchingService.Infrastructure.Persistence.Repositories;
 
@@ -20,6 +21,11 @@ public class Repository<TEntity> : IRepository<TEntity> where TEntity : class
 	public async Task<IEnumerable<TEntity>> GetAllAsync(CancellationToken cancellationToken)
 	{
 		return await _context.Set<TEntity>().ToListAsync(cancellationToken);
+	}
+
+	public Task<TEntity?> GetFirstOrDefaultAsync(Expression<Func<TEntity, bool>> predicate, CancellationToken cancellationToken)
+	{
+		return _context.Set<TEntity>().Where(predicate).FirstOrDefaultAsync(cancellationToken);
 	}
 
 	public async Task AddAsync(TEntity entity, CancellationToken cancellationToken)

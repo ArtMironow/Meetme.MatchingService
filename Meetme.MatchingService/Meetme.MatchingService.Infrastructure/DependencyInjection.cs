@@ -5,6 +5,7 @@ using Meetme.MatchingService.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Meetme.MatchingService.Infrastructure.ExternalServices;
 
 namespace Meetme.MatchingService.Infrastructure;
 
@@ -13,6 +14,14 @@ public static class DependencyInjection
 {
 	public static IServiceCollection AddInfrastructure(this IServiceCollection services, IConfiguration configuration)
 	{
+		services.Configure<ProfileServiceRoutes>(configuration.GetSection(ConfigurationKeys.ProfileServiceRoutesSection));
+
+		services.AddHttpContextAccessor();
+
+		services.AddHttpClient<IProfileServiceClient, ProfileServiceClient>().AddStandardResilienceHandler();
+
+		services.AddScoped<IProfileServiceClient, ProfileServiceClient>();
+
 		services.AddDbContext<MatchingServiceDbContext>(
 			options => options
 				.UseNpgsql(configuration.GetConnectionString(ConfigurationKeys.ConnectionString))
