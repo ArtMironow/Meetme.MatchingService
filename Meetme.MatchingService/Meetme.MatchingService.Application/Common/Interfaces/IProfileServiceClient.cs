@@ -4,5 +4,5 @@ namespace Meetme.MatchingService.Application.Common.Interfaces;
 
 public interface IProfileServiceClient
 {
-	Task<ProfileDto?> GetProfileAsync(Guid id);
+	Task<ProfileDto?> GetProfileAsync(Guid id, CancellationToken cancellationToken);
 }

@@ -14,6 +14,8 @@ public static class DependencyInjection
 {
 	public static IServiceCollection AddInfrastructure(this IServiceCollection services, IConfiguration configuration)
 	{
+		services.Configure<ProfileServiceRoutes>(configuration.GetSection(ConfigurationKeys.ProfileServiceRoutesSection));
+
 		services.AddHttpContextAccessor();
 
 		services.AddHttpClient<IProfileServiceClient, ProfileServiceClient>().AddStandardResilienceHandler();

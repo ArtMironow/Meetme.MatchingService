@@ -1,9 +1,9 @@
-﻿using Meetme.MatchingService.Domain.Entities;
+﻿using Meetme.MatchingService.Application.Models;
 
 namespace Meetme.MatchingService.Application.Common.Interfaces;
 
 public interface IMatchService
 {
-	Task MatchProfilesAsync(LikeEntity likeEntity, CancellationToken cancellationToken);
-	Task RemoveMatchAsync(LikeEntity likeEntity, CancellationToken cancellationToken);
+	Task MatchProfilesAsync(LikeModel likeModel, CancellationToken cancellationToken);
+	Task RemoveMatchAsync(LikeModel likeModel, CancellationToken cancellationToken);
 }

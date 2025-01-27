@@ -1,6 +1,7 @@
 ﻿using MapsterMapper;
 using MediatR;
 using Meetme.MatchingService.Application.Common.Interfaces;
+using Meetme.MatchingService.Application.Models;
 using Meetme.MatchingService.Domain.Entities;
 
 namespace Meetme.MatchingService.Application.Likes.Commands.CreateLike;
@@ -10,14 +11,12 @@ public class CreateLikeCommandHandler : IRequestHandler<CreateLikeCommand, Creat
 {
 	private readonly IRepository<LikeEntity> _likeRepository;
 	private readonly IMapper _mapper;
-
 	private readonly IMatchService _matchService;
 
 	public CreateLikeCommandHandler(IRepository<LikeEntity> likeRepository, IMapper mapper, IMatchService matchService)
 	{
 		_likeRepository = likeRepository;
 		_mapper = mapper;
-
 		_matchService = matchService;
 	}
 
@@ -27,7 +26,8 @@ public class CreateLikeCommandHandler : IRequestHandler<CreateLikeCommand, Creat
 
 		await _likeRepository.AddAsync(likeEntity, cancellationToken);
 
-		await _matchService.MatchProfilesAsync(likeEntity, cancellationToken);
+		var likeModel = _mapper.Map<LikeModel>(likeEntity);
+		await _matchService.MatchProfilesAsync(likeModel, cancellationToken);
 
 		return new CreateLikeResult(likeEntity);
 	}

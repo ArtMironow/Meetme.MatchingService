@@ -1,4 +1,6 @@
 ﻿using Meetme.MatchingService.Application.Common.Interfaces;
+using Meetme.MatchingService.Application.Models;
+using Meetme.MatchingService.Domain.DataTransferObjects;
 using Meetme.MatchingService.Domain.Entities;
 
 namespace Meetme.MatchingService.Application.Services.Match;
@@ -16,26 +18,27 @@ public class MatchService : IMatchService
 		_likeRepository = likeRepository;
 	}
 
-	public async Task MatchProfilesAsync(LikeEntity likeEntity, CancellationToken cancellationToken)
+	public async Task MatchProfilesAsync(LikeModel likeModel, CancellationToken cancellationToken)
 	{
-		var areProfilesMatched = await TryMatchProfilesAsync(likeEntity, cancellationToken);
+		var areProfilesMatched = await TryMatchProfilesAsync(likeModel, cancellationToken);
 
 		if (areProfilesMatched)
 		{
 			var match = new MatchEntity
 			{
-				ProfileId = likeEntity.ProfileId,
-				MatchedProfileId = likeEntity.LikedProfileId,
+				ProfileId = likeModel.ProfileId,
+				MatchedProfileId = likeModel.LikedProfileId,
 			};
 
 			await _matchRepository.AddAsync(match, cancellationToken);
 		}
 	}
 
-	public async Task RemoveMatchAsync(LikeEntity likeEntity, CancellationToken cancellationToken)
+	public async Task RemoveMatchAsync(LikeModel likeModel, CancellationToken cancellationToken)
 	{
 		var match = await _matchRepository.GetFirstOrDefaultAsync(m =>
-			m.ProfileId == likeEntity.ProfileId && m.MatchedProfileId == likeEntity.LikedProfileId, cancellationToken);
+			(m.ProfileId == likeModel.ProfileId && m.MatchedProfileId == likeModel.LikedProfileId)
+			|| (m.MatchedProfileId == likeModel.ProfileId && m.ProfileId == likeModel.LikedProfileId), cancellationToken);
 
 		if (match != null)
 		{
@@ -43,19 +46,37 @@ public class MatchService : IMatchService
 		}
 	}
 
-	private async Task<bool> TryMatchProfilesAsync(LikeEntity likeEntity, CancellationToken cancellationToken)
+	private async Task<bool> TryMatchProfilesAsync(LikeModel likeModel, CancellationToken cancellationToken)
 	{
-		var like = await _likeRepository.GetFirstOrDefaultAsync(l => l.ProfileId == likeEntity.LikedProfileId && l.LikedProfileId == likeEntity.ProfileId, cancellationToken);
+		var like = await _likeRepository.GetFirstOrDefaultAsync(l => l.ProfileId == likeModel.LikedProfileId && l.LikedProfileId == likeModel.ProfileId, cancellationToken);
 
 		if (like == null)
 		{
 			return false;
 		}
 
-		var profile = await _profileServiceClient.GetProfileAsync(likeEntity.ProfileId);
-		var matchingProfile = await _profileServiceClient.GetProfileAsync(likeEntity.LikedProfileId);
+		var getProfileTasks = new[]
+		{
+			_profileServiceClient.GetProfileAsync(likeModel.ProfileId, cancellationToken),
+			_profileServiceClient.GetProfileAsync(likeModel.LikedProfileId, cancellationToken)
+		};
 
-		if (matchingProfile!.Age < profile!.Preference!.MinAge
+		var getProfileTasksResults = await Task.WhenAll(getProfileTasks);
+
+		var profile = getProfileTasksResults[0];
+		var matchingProfile = getProfileTasksResults[1];
+
+		return AreProfilesMatched(profile, matchingProfile);
+	}
+
+	private bool AreProfilesMatched(ProfileDto? profile, ProfileDto? matchingProfile)
+	{
+		if (profile == null || matchingProfile == null || profile.Preference == null)
+		{
+			return false;
+		}	
+
+		if (matchingProfile.Age < profile.Preference.MinAge
 			&& matchingProfile.Age > profile.Preference.MaxAge
 			&& matchingProfile.Gender == profile.Preference.GenderPreference)
 		{
