@@ -16,6 +16,8 @@ public static class DependencyInjection
 	{
 		services.Configure<ProfileServiceRoutes>(configuration.GetSection(ConfigurationKeys.ProfileServiceRoutesSection));
 
+		services.Configure<ConnectionStrings>(configuration.GetSection(ConfigurationKeys.ConnectionStringsSection));
+
 		services.AddHttpContextAccessor();
 
 		services.AddHttpClient<IProfileServiceClient, ProfileServiceClient>().AddStandardResilienceHandler();
@@ -26,6 +28,8 @@ public static class DependencyInjection
 			options => options
 				.UseNpgsql(configuration.GetConnectionString(ConfigurationKeys.ConnectionString))
 				.AddInterceptors(new TimestampInterceptor()));
+
+		services.AddScoped<IMongoRepository, MongoRepository>();
 
 		services.AddScoped(typeof(IRepository<>), typeof(Repository<>));
 

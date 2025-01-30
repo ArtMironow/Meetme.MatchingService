@@ -1,7 +1,9 @@
-﻿using Meetme.MatchingService.Application.Common.Interfaces;
+﻿using MediatR;
+using Meetme.MatchingService.Application.Common.Interfaces;
 using Meetme.MatchingService.Application.Models;
 using Meetme.MatchingService.Domain.DataTransferObjects;
 using Meetme.MatchingService.Domain.Entities;
+using Meetme.MatchingService.Domain.Events;
 
 namespace Meetme.MatchingService.Application.Services.Match;
 
@@ -10,19 +12,23 @@ public class MatchService : IMatchService
 	private readonly IProfileServiceClient _profileServiceClient;
 	private readonly IRepository<MatchEntity> _matchRepository;
 	private readonly IRepository<LikeEntity> _likeRepository;
+	private readonly IPublisher _mediator;
+	private readonly IMongoRepository _mongoRepository;
 
-	public MatchService(IProfileServiceClient profileServiceClient, IRepository<MatchEntity> matchRepository, IRepository<LikeEntity> likeRepository)
+	public MatchService(IProfileServiceClient profileServiceClient, IRepository<MatchEntity> matchRepository, IRepository<LikeEntity> likeRepository, IMediator mediator, IMongoRepository mongoRepository)
 	{
 		_profileServiceClient = profileServiceClient;
 		_matchRepository = matchRepository;
 		_likeRepository = likeRepository;
+		_mediator = mediator;
+		_mongoRepository = mongoRepository;
 	}
 
 	public async Task MatchProfilesAsync(LikeModel likeModel, CancellationToken cancellationToken)
 	{
-		var areProfilesMatched = await TryMatchProfilesAsync(likeModel, cancellationToken);
+		var (areProfilesMatched, profile, matchedProfile) = await TryMatchProfilesAsync(likeModel, cancellationToken);
 
-		if (areProfilesMatched)
+		if (areProfilesMatched && profile != null && matchedProfile != null)
 		{
 			var match = new MatchEntity
 			{
@@ -31,6 +37,14 @@ public class MatchService : IMatchService
 			};
 
 			await _matchRepository.AddAsync(match, cancellationToken);
+
+			var sendNotificationTasks = new[]
+			{
+				SendNotificationAsync(profile, matchedProfile.Id, cancellationToken),
+				SendNotificationAsync(matchedProfile, profile.Id, cancellationToken)
+			};
+
+			await Task.WhenAll(sendNotificationTasks);
 		}
 	}
 
@@ -46,13 +60,28 @@ public class MatchService : IMatchService
 		}
 	}
 
-	private async Task<bool> TryMatchProfilesAsync(LikeModel likeModel, CancellationToken cancellationToken)
+	private async Task SendNotificationAsync(ProfileDto profile, Guid matchedProfileId, CancellationToken cancellationToken)
+	{
+		var notificationEvent = new NotificationEvent
+		{
+			UserId = profile.IdentityId,
+			ProfileId = profile.Id,
+			MatchedProfileId = matchedProfileId,
+			CreatedAt = DateTime.UtcNow,
+		};
+
+		await _mongoRepository.SaveAsync(notificationEvent, cancellationToken);
+
+		await _mediator.Publish(notificationEvent, cancellationToken);
+	}
+
+	private async Task<(bool areProfilesMatched, ProfileDto? profile, ProfileDto? matchedProfile)> TryMatchProfilesAsync(LikeModel likeModel, CancellationToken cancellationToken)
 	{
 		var like = await _likeRepository.GetFirstOrDefaultAsync(l => l.ProfileId == likeModel.LikedProfileId && l.LikedProfileId == likeModel.ProfileId, cancellationToken);
 
 		if (like == null)
 		{
-			return false;
+			return (false, null, null);
 		}
 
 		var getProfileTasks = new[]
@@ -66,7 +95,9 @@ public class MatchService : IMatchService
 		var profile = getProfileTasksResults[0];
 		var matchingProfile = getProfileTasksResults[1];
 
-		return AreProfilesMatched(profile, matchingProfile);
+		var areProfilesMatched = AreProfilesMatched(profile, matchingProfile);
+
+		return (areProfilesMatched, profile, matchingProfile);
 	}
 
 	private bool AreProfilesMatched(ProfileDto? profile, ProfileDto? matchingProfile)

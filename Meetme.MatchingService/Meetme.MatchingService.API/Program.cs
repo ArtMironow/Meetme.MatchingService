@@ -1,5 +1,7 @@
 using Meetme.MatchingService.API;
+using Meetme.MatchingService.API.Common.Notifications;
 using Meetme.MatchingService.API.Middleware;
+using Meetme.MatchingService.API.Notifications;
 using Meetme.MatchingService.Application;
 using Meetme.MatchingService.Infrastructure;
 
@@ -24,6 +26,8 @@ app.UseAuthentication();
 app.UseAuthorization();
 
 app.UseMiddleware<GlobalExceptionHandlingMiddleware>();
+
+app.MapHub<NotificationsHub>(NotificationsKeys.NotificationsEndpoint);
 
 app.MapControllers();
 

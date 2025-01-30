@@ -1,6 +1,9 @@
-﻿using Meetme.MatchingService.API.Common.Mappings;
+﻿using MediatR;
+using Meetme.MatchingService.API.Common.Mappings;
 using Meetme.MatchingService.API.Extensions;
 using Meetme.MatchingService.API.Middleware;
+using Meetme.MatchingService.API.Notifications;
+using Meetme.MatchingService.Domain.Events;
 
 namespace Meetme.MatchingService.API;
 
@@ -11,6 +14,10 @@ public static class DependencyInjection
 		services.AddControllers();
 		services.AddEndpointsApiExplorer();
 		services.AddSwaggerGen();
+
+		services.AddSignalR();
+
+		services.AddScoped<INotificationHandler<NotificationEvent>, NotificationEventHandler>();
 
 		services.AddMappings();
 
