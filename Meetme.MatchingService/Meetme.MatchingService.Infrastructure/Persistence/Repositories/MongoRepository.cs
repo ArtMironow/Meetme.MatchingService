@@ -18,6 +18,11 @@ public class MongoRepository : IMongoRepository
 		_eventCollection = mongoDbName.GetCollection<NotificationEvent>(ConfigurationKeys.MongoDbCollectionName);
 	}
 
+	public Task<List<NotificationEvent>> FindEventsByUserIdAsync(string id, CancellationToken cancellationToken)
+	{
+		return _eventCollection.Find(x => x.UserId == id).ToListAsync(cancellationToken);
+	}
+
 	public Task SaveAsync(NotificationEvent @event, CancellationToken cancellationToken)
 	{
 		return _eventCollection.InsertOneAsync(@event, new InsertOneOptions(), cancellationToken);

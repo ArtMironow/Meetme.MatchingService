@@ -4,6 +4,7 @@ using Meetme.MatchingService.API.Extensions;
 using Meetme.MatchingService.API.Middleware;
 using Meetme.MatchingService.API.Notifications;
 using Meetme.MatchingService.Domain.Events;
+using System.Text.Json.Serialization;
 
 namespace Meetme.MatchingService.API;
 
@@ -15,7 +16,10 @@ public static class DependencyInjection
 		services.AddEndpointsApiExplorer();
 		services.AddSwaggerGen();
 
-		services.AddSignalR();
+		services.AddSignalR().AddJsonProtocol(options =>
+		{
+			options.PayloadSerializerOptions.Converters.Add(new JsonStringEnumConverter());
+		});
 
 		services.AddScoped<INotificationHandler<NotificationEvent>, NotificationEventHandler>();
 

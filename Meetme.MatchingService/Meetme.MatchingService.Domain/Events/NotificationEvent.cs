@@ -1,4 +1,5 @@
 ﻿using MediatR;
+using Meetme.MatchingService.Domain.Events.Enums;
 using MongoDB.Bson;
 using MongoDB.Bson.Serialization.Attributes;
 
@@ -8,10 +9,12 @@ public class NotificationEvent : INotification
 {
 	[BsonId]
 	[BsonGuidRepresentation(GuidRepresentation.Standard)]
-	public Guid UserId { get; set; }
+	public Guid Id { get; set; }
+	public required string UserId { get; set; }
 	[BsonGuidRepresentation(GuidRepresentation.Standard)]
 	public Guid ProfileId { get; set; }
-	[BsonGuidRepresentation(GuidRepresentation.Standard)]
-	public Guid MatchedProfileId { get; set; }
+	public EventDetails? EventDetails { get; set; }
+	[BsonRepresentation(BsonType.String)]
+	public NotificationType Type { get; set; }
 	public DateTime CreatedAt { get; set; }
 }

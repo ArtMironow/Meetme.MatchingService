@@ -1,9 +1,7 @@
-﻿using MediatR;
-using Meetme.MatchingService.Application.Common.Interfaces;
+﻿using Meetme.MatchingService.Application.Common.Interfaces;
 using Meetme.MatchingService.Application.Models;
 using Meetme.MatchingService.Domain.DataTransferObjects;
 using Meetme.MatchingService.Domain.Entities;
-using Meetme.MatchingService.Domain.Events;
 
 namespace Meetme.MatchingService.Application.Services.Match;
 
@@ -12,16 +10,14 @@ public class MatchService : IMatchService
 	private readonly IProfileServiceClient _profileServiceClient;
 	private readonly IRepository<MatchEntity> _matchRepository;
 	private readonly IRepository<LikeEntity> _likeRepository;
-	private readonly IPublisher _mediator;
-	private readonly IMongoRepository _mongoRepository;
+	private readonly INotificationService _notificationService;
 
-	public MatchService(IProfileServiceClient profileServiceClient, IRepository<MatchEntity> matchRepository, IRepository<LikeEntity> likeRepository, IMediator mediator, IMongoRepository mongoRepository)
+	public MatchService(IProfileServiceClient profileServiceClient, IRepository<MatchEntity> matchRepository, IRepository<LikeEntity> likeRepository, INotificationService notificationService)
 	{
 		_profileServiceClient = profileServiceClient;
 		_matchRepository = matchRepository;
 		_likeRepository = likeRepository;
-		_mediator = mediator;
-		_mongoRepository = mongoRepository;
+		_notificationService = notificationService;
 	}
 
 	public async Task MatchProfilesAsync(LikeModel likeModel, CancellationToken cancellationToken)
@@ -40,8 +36,8 @@ public class MatchService : IMatchService
 
 			var sendNotificationTasks = new[]
 			{
-				SendNotificationAsync(profile, matchedProfile.Id, cancellationToken),
-				SendNotificationAsync(matchedProfile, profile.Id, cancellationToken)
+				_notificationService.SendProfilesMatchedNotificationAsync(profile, matchedProfile.Id, cancellationToken),
+				_notificationService.SendProfilesMatchedNotificationAsync(matchedProfile, profile.Id, cancellationToken)
 			};
 
 			await Task.WhenAll(sendNotificationTasks);
@@ -58,21 +54,6 @@ public class MatchService : IMatchService
 		{
 			await _matchRepository.RemoveAsync(match, cancellationToken);
 		}
-	}
-
-	private async Task SendNotificationAsync(ProfileDto profile, Guid matchedProfileId, CancellationToken cancellationToken)
-	{
-		var notificationEvent = new NotificationEvent
-		{
-			UserId = profile.IdentityId,
-			ProfileId = profile.Id,
-			MatchedProfileId = matchedProfileId,
-			CreatedAt = DateTime.UtcNow,
-		};
-
-		await _mongoRepository.SaveAsync(notificationEvent, cancellationToken);
-
-		await _mediator.Publish(notificationEvent, cancellationToken);
 	}
 
 	private async Task<(bool areProfilesMatched, ProfileDto? profile, ProfileDto? matchedProfile)> TryMatchProfilesAsync(LikeModel likeModel, CancellationToken cancellationToken)
