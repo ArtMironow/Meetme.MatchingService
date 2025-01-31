@@ -8,8 +8,7 @@ namespace Meetme.MatchingService.Domain.Events;
 public class NotificationEvent : INotification
 {
 	[BsonId]
-	[BsonGuidRepresentation(GuidRepresentation.Standard)]
-	public Guid Id { get; set; }
+	public required string Id { get; set; }
 	public required string UserId { get; set; }
 	[BsonGuidRepresentation(GuidRepresentation.Standard)]
 	public Guid ProfileId { get; set; }

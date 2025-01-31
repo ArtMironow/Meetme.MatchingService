@@ -1,11 +1,9 @@
 ﻿using MapsterMapper;
-using MediatR;
 using Meetme.MatchingService.API.Common.Routes;
-using Meetme.MatchingService.Application.Notifications.Queries.GetByUserId;
+using Meetme.MatchingService.Application.Common.Interfaces;
 using Meetme.MatchingService.Contracts.Notifications.GetByUserId;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using System.Security.Claims;
 
 namespace Meetme.MatchingService.API.Controllers;
 
@@ -14,26 +12,22 @@ namespace Meetme.MatchingService.API.Controllers;
 [Route(EndpointRoutes.MatchNotifications)]
 public class NotificationsController : ControllerBase
 {
-    private readonly ISender _mediator;
 	private readonly IMapper _mapper;
+	private readonly INotificationService _notificationService;
 
-	public NotificationsController(ISender mediator, IMapper mapper)
+	public NotificationsController(IMapper mapper, INotificationService notificationService)
 	{
-		_mediator = mediator;
 		_mapper = mapper;
+		_notificationService = notificationService;
 	}
 
 	[HttpGet]
 	public async Task<IEnumerable<GetNotificationsByUserIdResponse>> GetNotificationsByUserIdAsync(CancellationToken cancellationToken)
 	{
-		var userId = User.Claims.FirstOrDefault(c => c.Type == ClaimTypes.NameIdentifier)?.Value;
+		var notifications = await _notificationService.GetNotificationsByUserIdAsync(User, cancellationToken);
 
-		var getNotificationsByUserIdQuery = new GetNotificationsByUserIdQuery(userId!);
+		var notificationsResponse = _mapper.Map<IEnumerable<GetNotificationsByUserIdResponse>>(notifications);
 
-		var getNotificationsByUserIdResult = await _mediator.Send(getNotificationsByUserIdQuery, cancellationToken);
-
-		var getNotificationsByUserIdResponse = _mapper.Map<IEnumerable<GetNotificationsByUserIdResponse>>(getNotificationsByUserIdResult);
-
-		return getNotificationsByUserIdResponse;
+		return notificationsResponse;
 	}
 }
