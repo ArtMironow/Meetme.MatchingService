@@ -5,7 +5,7 @@ namespace Meetme.MatchingService.Domain.DataTransferObjects;
 public class ProfileDto
 {
 	public Guid Id { get; set; }
-	public Guid IdentityId { get; set; }
+	public required string IdentityId { get; set; }
 	public string? Name { get; set; }
 	public int Age { get; set; }
 	public string? Bio { get; set; }

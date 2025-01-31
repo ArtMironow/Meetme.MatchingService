@@ -6,6 +6,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Meetme.MatchingService.Infrastructure.ExternalServices;
+using Meetme.MatchingService.Infrastructure.Persistence.Configurations;
 
 namespace Meetme.MatchingService.Infrastructure;
 
@@ -15,6 +16,8 @@ public static class DependencyInjection
 	public static IServiceCollection AddInfrastructure(this IServiceCollection services, IConfiguration configuration)
 	{
 		services.Configure<ProfileServiceRoutes>(configuration.GetSection(ConfigurationKeys.ProfileServiceRoutesSection));
+
+		services.Configure<ConnectionStrings>(configuration.GetSection(ConfigurationKeys.ConnectionStringsSection));
 
 		services.AddHttpContextAccessor();
 
@@ -26,6 +29,10 @@ public static class DependencyInjection
 			options => options
 				.UseNpgsql(configuration.GetConnectionString(ConfigurationKeys.ConnectionString))
 				.AddInterceptors(new TimestampInterceptor()));
+
+		MongoDbConfiguration.Configure();
+
+		services.AddScoped<IMongoRepository, MongoRepository>();
 
 		services.AddScoped(typeof(IRepository<>), typeof(Repository<>));
 
